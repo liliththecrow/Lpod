@@ -11,13 +11,20 @@ fileInput.addEventListener("change", handleFiles);
 function handleFiles(event) {
   const files = Array.from(event.target.files).filter(file => file.type === "audio/mpeg");
 
-  songs = files.map(file => ({ file, title: file.name }));
-
-  if (songs.length > 0) {
-    currentSongIndex = 0;
-    renderSongList();
-    playSong();
+  if (files.length === 0) {
+    alert("Please upload .mp3 files only.");
+    return;
   }
+
+  songs = files.map(file => ({
+    file,
+    title: file.name.replace(/\.[^/.]+$/, ""), // remove .mp3
+    objectURL: URL.createObjectURL(file)
+  }));
+
+  currentSongIndex = 0;
+  renderSongList();
+  playSong();
 }
 
 function renderSongList() {
@@ -35,9 +42,9 @@ function renderSongList() {
 }
 
 function playSong() {
+  if (!songs[currentSongIndex]) return;
   const song = songs[currentSongIndex];
-  const objectURL = URL.createObjectURL(song.file);
-  audio.src = objectURL;
+  audio.src = song.objectURL;
   audio.play();
   extractEmbeddedArt(song.file);
   renderSongList();
@@ -45,19 +52,19 @@ function playSong() {
 
 function extractEmbeddedArt(file) {
   jsmediatags.read(file, {
-    onSuccess: tag => {
-      const picture = tag.tags.picture;
-      if (picture) {
-        const base64String = picture.data
-          .map(byte => String.fromCharCode(byte))
-          .join("");
-        const imageUrl = `data:${picture.format};base64,${btoa(base64String)}`;
-        albumArtEl.style.backgroundImage = `url(${imageUrl})`;
+    onSuccess: function(tag) {
+      const pic = tag.tags.picture;
+      if (pic) {
+        const byteArray = new Uint8Array(pic.data);
+        const blob = new Blob([byteArray], { type: pic.format });
+        const url = URL.createObjectURL(blob);
+        albumArtEl.style.backgroundImage = `url(${url})`;
       } else {
         albumArtEl.style.backgroundImage = `url('default.jpg')`;
       }
     },
-    onError: () => {
+    onError: function(error) {
+      console.warn("Tag read error:", error);
       albumArtEl.style.backgroundImage = `url('default.jpg')`;
     }
   });
@@ -69,13 +76,16 @@ document.getElementById("playPause").addEventListener("click", () => {
 });
 
 document.getElementById("next").addEventListener("click", () => {
-  if (songs.length === 0) return;
   currentSongIndex = (currentSongIndex + 1) % songs.length;
   playSong();
 });
 
 document.getElementById("prev").addEventListener("click", () => {
-  if (songs.length === 0) return;
   currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+  playSong();
+});
+
+audio.addEventListener("ended", () => {
+  currentSongIndex = (currentSongIndex + 1) % songs.length;
   playSong();
 });
