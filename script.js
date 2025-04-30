@@ -1,13 +1,24 @@
-const songs = [
-  { title: "Song One", file: "tunes/Song1.mp3" },
-  { title: "Song Two", file: "tunes/Song2.mp3" },
-];
-
-const audio = document.getElementById("audioPlayer");
+const fileInput = document.getElementById("fileInput");
 const songListEl = document.getElementById("songList");
 const albumArtEl = document.getElementById("albumArt");
+const audio = document.getElementById("audioPlayer");
 
+let songs = [];
 let currentSongIndex = 0;
+
+fileInput.addEventListener("change", handleFiles);
+
+function handleFiles(event) {
+  const files = Array.from(event.target.files).filter(file => file.type === "audio/mpeg");
+
+  songs = files.map(file => ({ file, title: file.name }));
+
+  if (songs.length > 0) {
+    currentSongIndex = 0;
+    renderSongList();
+    playSong();
+  }
+}
 
 function renderSongList() {
   songListEl.innerHTML = "";
@@ -25,27 +36,29 @@ function renderSongList() {
 
 function playSong() {
   const song = songs[currentSongIndex];
-  audio.src = song.file;
+  const objectURL = URL.createObjectURL(song.file);
+  audio.src = objectURL;
   audio.play();
-  loadEmbeddedArt(song.file);
+  extractEmbeddedArt(song.file);
   renderSongList();
 }
 
-function loadEmbeddedArt(path) {
-  jsmediatags.read(path, {
-    onSuccess: function(tag) {
-      if (tag.tags.picture) {
-        const { data, format } = tag.tags.picture;
-        const byteArray = new Uint8Array(data);
-        const blob = new Blob([byteArray], { type: format });
-        const url = URL.createObjectURL(blob);
-        albumArtEl.style.backgroundImage = `url(${url})`;
+function extractEmbeddedArt(file) {
+  jsmediatags.read(file, {
+    onSuccess: tag => {
+      const picture = tag.tags.picture;
+      if (picture) {
+        const base64String = picture.data
+          .map(byte => String.fromCharCode(byte))
+          .join("");
+        const imageUrl = `data:${picture.format};base64,${btoa(base64String)}`;
+        albumArtEl.style.backgroundImage = `url(${imageUrl})`;
       } else {
-        albumArtEl.style.backgroundImage = `url(tunes/default.jpg)`;
+        albumArtEl.style.backgroundImage = `url('default.jpg')`;
       }
     },
-    onError: function() {
-      albumArtEl.style.backgroundImage = `url(tunes/default.jpg)`;
+    onError: () => {
+      albumArtEl.style.backgroundImage = `url('default.jpg')`;
     }
   });
 }
@@ -56,13 +69,13 @@ document.getElementById("playPause").addEventListener("click", () => {
 });
 
 document.getElementById("next").addEventListener("click", () => {
+  if (songs.length === 0) return;
   currentSongIndex = (currentSongIndex + 1) % songs.length;
   playSong();
 });
 
 document.getElementById("prev").addEventListener("click", () => {
+  if (songs.length === 0) return;
   currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
   playSong();
 });
-
-renderSongList();

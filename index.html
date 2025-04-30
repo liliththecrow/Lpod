@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="jsmediatags.min.js"></script>
-  <meta charset="UTF-8" />
-  <title>Offline iPod Player</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>iPod-Style Music Player</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/jsmediatags@latest/dist/jsmediatags.min.js"></script>
 </head>
 <body>
   <div class="ipod">
     <div class="screen">
       <div class="album-art" id="albumArt"></div>
+      <input type="file" id="fileInput" multiple accept=".mp3" />
       <ul class="song-list" id="songList"></ul>
     </div>
     <div class="controls">
