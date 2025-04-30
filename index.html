@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Offline iPod Player</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="ipod">
+    <div class="screen">
+      <div class="album-art" id="albumArt"></div>
+      <ul class="song-list" id="songList"></ul>
+    </div>
+    <div class="controls">
+      <button id="prev">⏮</button>
+      <button id="playPause">▶️</button>
+      <button id="next">⏭</button>
+    </div>
+  </div>
+  <audio id="audioPlayer" controls style="display:none;"></audio>
+  <script src="script.js"></script>
+</body>
+</html>
