@@ -18,7 +18,7 @@ function handleFiles(event) {
 
   songs = files.map(file => ({
     file,
-    title: file.name.replace(/\.[^/.]+$/, ""), // remove .mp3
+    title: file.name.replace(/\.[^/.]+$/, ""),
     objectURL: URL.createObjectURL(file)
   }));
 
@@ -51,23 +51,39 @@ function playSong() {
 }
 
 function extractEmbeddedArt(file) {
-  jsmediatags.read(file, {
-    onSuccess: function(tag) {
-      const pic = tag.tags.picture;
-      if (pic) {
-        const byteArray = new Uint8Array(pic.data);
-        const blob = new Blob([byteArray], { type: pic.format });
-        const url = URL.createObjectURL(blob);
-        albumArtEl.style.backgroundImage = `url(${url})`;
-      } else {
-        albumArtEl.style.backgroundImage = `url('default.jpg')`;
+  const reader = new FileReader();
+
+  reader.onload = function () {
+    jsmediatags.read(
+      {
+        file: new Blob([reader.result]),
+        type: jsmediatags.Reader.BLOB
+      },
+      {
+        onSuccess: function (tag) {
+          const pic = tag.tags.picture;
+          if (pic) {
+            const byteArray = new Uint8Array(pic.data);
+            const blob = new Blob([byteArray], { type: pic.format });
+            const url = URL.createObjectURL(blob);
+            albumArtEl.style.backgroundImage = `url(${url})`;
+          } else {
+            albumArtEl.style.backgroundImage = `url('default.jpg')`;
+          }
+        },
+        onError: function (err) {
+          console.error("Tag error:", err);
+          albumArtEl.style.backgroundImage = `url('default.jpg')`;
+        }
       }
-    },
-    onError: function(error) {
-      console.warn("Tag read error:", error);
-      albumArtEl.style.backgroundImage = `url('default.jpg')`;
-    }
-  });
+    );
+  };
+
+  reader.onerror = function (e) {
+    console.error("File read error:", e);
+  };
+
+  reader.readAsArrayBuffer(file);
 }
 
 document.getElementById("playPause").addEventListener("click", () => {
